@@ -86,3 +86,31 @@ Statements & Printing Strings:
 - Use %f for float variables.
 - You can control decimal places (e.g., %.2f prints exactly two digits after the decimal point).
 - Printing Expressions: printf can display the value of a calculated numeric expression directly, saving you from creating extra variables.
+
+2.5 Reading Input
+- scanf function: used to obtain input from the user (counterpart to printf)
+- Uses format strings (e.g., "%d" for int, "%f" for float)
+- Crucial rule: Must use the & symbol before the variable name to store the input properly. Forgetting it causes a crash
+- Example: scanf("%d", &age);
+- scanf returns the number of items successfully read, which can be used for error checking.
+
+2.6 Defining Names for Constants
+- Purpose: Replace confusing "magic numbers" (like 166 or 32.0) with descriptive names (like DAYS_IN_YEAR or FREEZING_POINT)
+- Uses #define directive (macro definition)
+- Handled by the preprocessor; does not end with a semicolon
+- Convention: Use ALL_CAPS for macro names to distinguish them from variables
+- Example: #define DAYS_IN_YEAR 365
+- Benefits: Improves readability and maintainability of code, allows for easy updates (change the value in one place), and prevents accidental changes to constant values.
+- Examples: 
+    #define PI 3.14159
+    #define MAX_USERS 1000
+
+2.7 Identifiers
+- Names chosen for variables, functions, and macros
+- Allowed characters: letters, digits, and underscores (_). Must begin with a letter or underscor
+- Case-sensitive: Upper-case and lower-case letters are different
+- Keywords: Words like int, void, if are reserved and cannot be used as identifiers
+- Examples:
+    Legal identifiers: times10, get_next_char, _done
+    Illegal identifiers: 10times (begins with a digit), get-next (contains a minus sign)
+    Case-sensitivity: job, joB, Job, and JOB are all completely different identifiers
