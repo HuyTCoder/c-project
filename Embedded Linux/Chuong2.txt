@@ -1,0 +1,41 @@
+TOOLCHAIN
+- Là bộ công cụ tối quan trọng dùng để biên dịch code của bạn thành ngôn ngữ mà con chip nhúng có thể hiểu được.
+- Phải dùng nó từ đầu đến cuối dự án, nếu không chương trình sẽ sinh ra những lỗi khó phát hiện
+- 2 cách kiếm Toolchain: Tải bản làm sẵn (ví dụ file TAR, Linaro) hoặc tự build lại từ đầu bằng phần mềm như crosstool-NG
+
+Yêu cầu kỹ thuật (Technical requirements)
+- Một hệ thống máy chủ (host system) dựa trên Linux đã được cài đặt autoconf, automake, bison, bzip2, cmake, flex, g++, gawk, gcc, gettext, git, gperf, help2man, libncurses5-dev, libstdc++6, libtool, libtool-bin, make, patch, python3-dev, rsync, texinfo, unzip, wget, và xz-utils hoặc các phần mềm tương đương.
+- Nên sử dụng hệ điều hành Ubuntu 20.04 LTS hoặc mới hơn.
+
+- Cài đặt tất cả các gói (packages) cần thiết trên Ubuntu 20.04 LTS:
+    $ sudo apt-get install autoconf automake bison bzip2 cmake \
+    flex g++ gawk gcc \
+    gettext git gperf help2man libncurses5-dev libstdc++6 libtool \
+    libtool-bin make \
+    patch python3-dev rsync texinfo unzip wget xz-utils
+
+Giới thiệu Toolchains:
+- Tập hợp các công cụ biên dịch mã nguồn thành các tệp thực thi có thể chạy trên thiết bị của bạn
+- Bao gồm một trình biên dịch (compiler), một trình liên kết (linker), và các thư viện thực thi (runtime libraries)
+
+- Cần thiết để xây dựng 3 thành phần còn lại của hệ thống Linux nhúng: bootloader, nhân (kernel) và hệ thống tập tin gốc (root filesystem)
+- Có khả năng biên dịch mã được viết bằng assembly, C và C++
+
+- Có thể dùng Clang thay thế cho GNU (Clang biên dịch nhanh hơn và chẩn đoán lỗi tốt hơn, GNU GCC có lợi thế về khả năng tương thích với cơ sở mã nguồn hiện có và hỗ trợ cho nhiều loại kiến trúc cũng như hệ điều hành)
+- GNU Toolchain tiêu chuẩn cần có:
+    + Binutils: Một bộ các tiện ích nhị phân bao gồm trình hợp dịch (assembler) và trình liên kết (linker).
+    + Bộ trình biên dịch GNU (GCC - GNU Compiler Collection):Các trình biên dịch cho ngôn ngữ C và các ngôn ngữ khác, tất cả chúng đều sử dụng chung một phần nền tảng (backend) để tạo ra mã assembler, sau đó đưa mã này vào trình hợp dịch GNU.
+    + C library: Giao diện chính giữa nhân hệ điều hành và các ứng dụng.
+    + Bản sao của các Linux kernel headers, chứa các định nghĩa và hằng số cần thiết khi truy cập trực tiếp vào kernel (cần khi viết các chương trình hoặc biên dịch các thư viện tương tác với các thiết bị Linux)
+    + Trình gỡ lỗi GNU (GDB - GNU Debugger)
+
+Các loại Toolchain:
+- Native: Chuỗi công cụ này chạy trên cùng một loại hệ thống (đôi khi chính là cùng một hệ thống thực tế) với các chương trình mà nó tạo ra. Đây là trường hợp thông thường đối với máy tính để bàn và máy chủ, và nó cũng đang trở nên phổ biến trên một số lớp thiết bị nhúng nhất định. Ví dụ, Raspberry Pi chạy Debian cho ARM có các trình biên dịch bản địa tự lưu trữ (self-hosted native compilers).
+- Cross: Chuỗi công cụ này chạy trên một loại hệ thống khác với hệ thống mục tiêu, cho phép việc phát triển được thực hiện trên một máy tính để bàn (PC) nhanh chóng và sau đó tải vào mục tiêu nhúng để kiểm thử.
+- Nên chọn Cross-development toolchain:
+    + Bo mạch nhúng thường quá yếu (RAM ít, CPU chậm), không đủ sức chạy các trình biên dịch nặng nề như GCC. Phải mượn sức mạnh của máy tính bàn để dịch cho nhanh.
+    + Giúp môi trường code trên máy tính của bạn không bị lẫn lộn với môi trường chạy thực tế của bo mạch
+
+- Nhược điểm của biên dịch Cross:
+    + Nhiều thư viện mã nguồn mở tải trên mạng về chỉ hỗ trợ Native Compiling, nếu ép chúng Cross Compiling thì sẽ bị lỗi tùm lum.
+    + Giải pháp: dùng các công cụ tự động như Buildroot/Yocto, hoặc nếu bắt buộc phải dùng Native thì người ta thường dùng QEMU (phần mềm giả lập) để giả lập con chip nhúng ngay trên máy tính bàn rồi mới biên dịch.
