@@ -116,25 +116,23 @@ Xây dựng chuỗi công cụ cho BeagleBone Black (Building a toolchain for Be
 - Vì BeagleBone Black có nhiều RAM và bộ nhớ lưu trữ, chúng ta có thể sử dụng glibc làm thư viện C. Mẫu gần giống nhất là arm-cortex_a8-linux-gnueabi.
 
 - Thêm tiền tố show- vào trước tên mẫu để cấu hình mặc định:
+    $ bin/ct-ng show-arm-cortex_a8-linux-gnueabi
+    [G...]   arm-cortex_a8-linux-gnueabi
+        Languages       : C,C++
+        OS              : linux-4.20.8
+        Binutils        : binutils-2.32
+        Compiler        : gcc-8.3.0
+        C library       : glibc-2.29
+        Debug tools     : duma-2_5_15 gdb-8.2.1 ltrace-0.7.3 strace-4.26
+        Companion libs  : expat-2.2.6 gettext-0.19.8.1 gmp-6.1.2 isl-0.20 libelf-0.8.12 libiconv-1.15 mpc-1.1.0 mpfr-4.0.2 ncurses-6.1 zlib-1.2.11
+        Companion tools :
 
-Bash
-$ bin/ct-ng show-arm-cortex_a8-linux-gnueabi
-[G...]   arm-cortex_a8-linux-gnueabi
-    Languages       : C,C++
-    OS              : linux-4.20.8
-    Binutils        : binutils-2.32
-    Compiler        : gcc-8.3.0
-    C library       : glibc-2.29
-    Debug tools     : duma-2_5_15 gdb-8.2.1 ltrace-0.7.3 strace-4.26
-    Companion libs  : expat-2.2.6 gettext-0.19.8.1 gmp-6.1.2 isl-0.20 libelf-0.8.12 libiconv-1.15 mpc-1.1.0 mpfr-4.0.2 ncurses-6.1 zlib-1.2.11
-    Companion tools :
 Cấu hình này khá sát với các yêu cầu của chúng ta, ngoại trừ việc nó sử dụng giao diện nhị phân eabi, loại giao diện truyền các đối số dấu phẩy động bằng các thanh ghi số nguyên. Chúng ta muốn ưu tiên sử dụng các thanh ghi dấu phẩy động phần cứng cho mục đích đó vì nó sẽ tăng tốc độ các lời gọi hàm có kiểu tham số là float và double. Bạn có thể thay đổi cấu hình này sau, vì vậy hiện tại bạn nên chọn cấu hình mục tiêu này:
+    $ bin/ct-ng arm-cortex_a8-linux-gnueabi
 
-Bash
-$ bin/ct-ng arm-cortex_a8-linux-gnueabi
 Tại thời điểm này, bạn có thể xem lại cấu hình và thực hiện các thay đổi bằng cách sử dụng lệnh menu cấu hình menuconfig:
+    $ bin/ct-ng menuconfig
 
-$ bin/ct-ng menuconfig
 - Hệ thống menu này dựa trên menuconfig của nhân Linux, và do đó việc điều hướng giao diện người dùng sẽ quen thuộc với bất kỳ ai đã từng cấu hình một kernel.
 - 3 thay đổi cấu hình khuyên dùng:
     + Trong phần Paths and misc options, vô hiệu hóa (disable) mục Render the toolchain read-only (CT_PREFIX_DIR_RO).
@@ -146,6 +144,7 @@ $ bin/ct-ng menuconfig
 - Các tên trong ngoặc đơn là các nhãn cấu hình được lưu trong tệp cấu hình. Khi bạn đã thực hiện xong các thay đổi, hãy thoát khỏi menu menuconfig và lưu cấu hình lại.
 
 - Bây giờ bạn có thể sử dụng crosstool-NG để lấy về, cấu hình và xây dựng các thành phần theo đặc tả của bạn, bằng cách gõ lệnh sau:
-$ bin/ct-ng build
+    $ bin/ct-ng build
+    
 - Quá trình xây dựng sẽ mất khoảng nửa giờ, sau đó bạn sẽ thấy chuỗi công cụ của mình hiện diện trong thư mục ~/x-tools/arm-cortex_a8-linux-gnueabihf.
 
