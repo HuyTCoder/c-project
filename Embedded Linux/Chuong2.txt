@@ -39,3 +39,113 @@ Các loại Toolchain:
 - Nhược điểm của biên dịch Cross:
     + Nhiều thư viện mã nguồn mở tải trên mạng về chỉ hỗ trợ Native Compiling, nếu ép chúng Cross Compiling thì sẽ bị lỗi tùm lum.
     + Giải pháp: dùng các công cụ tự động như Buildroot/Yocto, hoặc nếu bắt buộc phải dùng Native thì người ta thường dùng QEMU (phần mềm giả lập) để giả lập con chip nhúng ngay trên máy tính bàn rồi mới biên dịch.
+
+
+
+Kiến trúc CPU:
+- Toolchain phải được xây dựng theo các khả năng của CPU mục tiêu, bao gồm những điều sau:
+    + Kiến trúc CPU: ARM, Bộ vi xử lý không có các tầng đường ống liên kết (MIPS - Microprocessor without Interlocked Pipelined Stages), x86_64, v.v.
+    + Hoạt động đọc dữ liệu theo chiều xuôi (Big-endian) hay ngược (little-endian):  Một số CPU có thể hoạt động ở cả hai chế độ, nhưng machine code cho mỗi chế độ là khác nhau.
+    + Hỗ trợ dấu phẩy động (Floating point): Nếu ko triển khai một bộ xử lý số thực phần cứng (hardware floating-point unit), toolchain phải được cấu hình để gọi một thư viện số thực phần mềm (software floating-point library) thay thế.
+    + Giao diện Nhị phân Ứng dụng (ABI - Application Binary Interface): Quy ước gọi hàm (calling convention) được sử dụng để truyền tham số giữa các lời gọi hàm.
+
+- GNU sử dụng một tiền tố (prefix) cho tên của mỗi công cụ trong chuỗi công cụ, giúp nhận diện các cấu hình kết hợp khác nhau có thể được tạo ra.
+- Nó bao gồm một bộ (tuple) gồm 3 hoặc 4 thành phần được phân tách bằng dấu gạch ngang, như được mô tả dưới đây:
+    + CPU: Đây là kiến trúc CPU (như ARM, MIPS, x86_64). Nếu CPU có cả hai chế độ endian,  thêm el cho little-endian hoặc eb cho big-endian.
+    + Nhân (Kernel): Đối với mục đích của chúng ta, nó luôn là linux.
+    + Hệ điều hành: Tên của thành phần không gian người dùng (user space component), có thể là gnu hoặc musl.
+
+- Có thể tìm thấy bộ tên (tuple) được sử dụng khi xây dựng chuỗi công cụ bằng cách sử dụng tùy chọn -dumpmachine của lệnh gcc.
+- Ví dụ:
+    $ gcc -dumpmachine
+    x86_64-linux-gnu
+    + Bộ tên này chỉ ra CPU là x86_64, kernel là linux và không gian người dùng là gnu.
+
+Lưu ý: Khi một trình biên dịch bản địa (native compiler) được cài đặt trên một máy, thông thường hệ thống sẽ tạo các liên kết (links) đến từng công cụ trong chuỗi công cụ mà không cần gắn tiền tố, để bạn có thể gọi thẳng trình biên dịch C bằng lệnh gcc.
+
+- Dưới đây là một ví dụ sử dụng trình biên dịch Cross:
+    $ mipsel-unknown-linux-gnu-gcc -dumpmachine
+    mipsel-unknown-linux-gnu
+    + Bộ tên này chỉ ra một CPU là MIPS little-endian (mipsel), nhà cung cấp không xác định (unknown), kernel là linux và không gian người dùng là gnu.
+
+
+
+Lựa chọn thư viện C
+- Giao diện lập trình với hệ điều hành Unix được định nghĩa bằng ngôn ngữ C, hiện được xác định bởi các tiêu chuẩn POSIX. Thư viện C (C library) là bản triển khai của giao diện đó; nó là cánh cổng dẫn vào kernel cho các chương trình Linux. Ngay cả khi bạn đang viết chương trình bằng ngôn ngữ khác, có thể là Java hoặc Python, các thư viện hỗ trợ chạy chuơng trình (runtime support libraries) tương ứng cuối cùng cũng sẽ phải gọi đến thư viện C, theo luồng sau:Ứng dụng (Application) -> Thư viện C (C library) -> Nhân Linux (Linux Kernel)
+- Bất cứ khi nào thư viện C cần các dịch vụ của kernel, nó sẽ sử dụng lời gọi hệ thống (kernel system call) để chuyển đổi giữa không gian người dùng (user space) và không gian nhân (kernel space). Hoàn toàn có thể qua mặt thư viện C bằng cách thực hiện trực tiếp các kernel system calls, nhưng việc đó mang lại rất nhiều rắc rối và gần như không bao giờ là cần thiết.
+
+- Vài thư viện C có thể lựa chọn:
+    + glibc: Thư viện GNU C tiêu chuẩn. Bản triển khai đầy đủ nhất của POSIX API. Giấy phép là LGPL 2.1.
+    + musl libc: Một giải pháp thay thế nhỏ gọn và tuân thủ tiêu chuẩn cho GNU libc dành cho các hệ thống có dung lượng RAM và bộ nhớ lưu trữ hạn chế. Giấy phép MIT.
+    + uClibc-ng: Chữ 'u' thực ra là ký tự 'mu' (micro) trong tiếng Hy Lạp, đây là thư viện C cho vi điều khiển (microcontroller). Giấy phép LGPL 2.1.
+    + eglibc: Hiện đã lỗi thời.
+
+- Đang dùng uClinux? → Chọn uClibc-ng
+- Nếu không, bộ nhớ lưu trữ có < 32 MiB không?
+- Nếu Có → Chọn musl libc (hoặc uClibc-ng)
+- Nếu Ko → Chọn glibc
+
+- Ko phải tất cả các toolchain dựng sẵn đều hỗ trợ tất cả các loại thư viện C.
+
+
+
+
+Tìm kiếm một toolchain
+- 3 lựa chọn:
+    + 1 toolchain được dựng sẵn (ready-built): Chỉ cần tải xuống và cài đặt, bị giới hạn ở cấu hình của nó
+    + 1 toolchain được tạo ra bởi một công cụ xây dựng nhúng (Recommended) như crosstool-NG
+    + Tạo ra 1 cái
+
+Cài đặt crosstool-NG (Installing crosstool-NG)
+- Trước khi biên dịch (build) crosstool-NG từ mã nguồn, cần cài đặt một chuỗi công cụ bản địa (native toolchain) và một số công cụ xây dựng trên máy chủ.
+- Tiếp theo, hãy lấy bản phát hành hiện tại từ kho lưu trữ Git của crosstool-NG, giải nén nó và tạo hệ thống menu giao diện (frontend menu system), ct-ng 
+$ git clone https://github.com/crosstool-ng/crosstool-ng.git
+$ cd crosstool-ng
+$ git checkout crosstool-ng-1.24.0
+$ ./bootstrap
+$ ./configure --prefix=${PWD}
+$ make
+$ make install
+-  --prefix=${PWD} cài chương trình vào thư mục hiện tại, tránh việc phải cần đến quyền root nếu cài ở vị trí mặc định /usr/local/share.
+- Gõ bin/ct-ng để khởi chạy menu của crosstool.
+
+
+Xây dựng chuỗi công cụ cho BeagleBone Black (Building a toolchain for BeagleBone Black)
+- Lệnh bin/ct-ng list-samples tạo danh sách các samples cho nhiều trường hợp sử dụng phổ biến.
+- Bo mạch BeagleBone Black sử dụng SoC TI AM335x, chứa một lõi ARM Cortex A8 và một bộ xử lý dấu phẩy động (floating-point unit) VFPv3.
+- Vì BeagleBone Black có nhiều RAM và bộ nhớ lưu trữ, chúng ta có thể sử dụng glibc làm thư viện C. Mẫu gần giống nhất là arm-cortex_a8-linux-gnueabi.
+
+- Thêm tiền tố show- vào trước tên mẫu để cấu hình mặc định:
+
+Bash
+$ bin/ct-ng show-arm-cortex_a8-linux-gnueabi
+[G...]   arm-cortex_a8-linux-gnueabi
+    Languages       : C,C++
+    OS              : linux-4.20.8
+    Binutils        : binutils-2.32
+    Compiler        : gcc-8.3.0
+    C library       : glibc-2.29
+    Debug tools     : duma-2_5_15 gdb-8.2.1 ltrace-0.7.3 strace-4.26
+    Companion libs  : expat-2.2.6 gettext-0.19.8.1 gmp-6.1.2 isl-0.20 libelf-0.8.12 libiconv-1.15 mpc-1.1.0 mpfr-4.0.2 ncurses-6.1 zlib-1.2.11
+    Companion tools :
+Cấu hình này khá sát với các yêu cầu của chúng ta, ngoại trừ việc nó sử dụng giao diện nhị phân eabi, loại giao diện truyền các đối số dấu phẩy động bằng các thanh ghi số nguyên. Chúng ta muốn ưu tiên sử dụng các thanh ghi dấu phẩy động phần cứng cho mục đích đó vì nó sẽ tăng tốc độ các lời gọi hàm có kiểu tham số là float và double. Bạn có thể thay đổi cấu hình này sau, vì vậy hiện tại bạn nên chọn cấu hình mục tiêu này:
+
+Bash
+$ bin/ct-ng arm-cortex_a8-linux-gnueabi
+Tại thời điểm này, bạn có thể xem lại cấu hình và thực hiện các thay đổi bằng cách sử dụng lệnh menu cấu hình menuconfig:
+
+$ bin/ct-ng menuconfig
+- Hệ thống menu này dựa trên menuconfig của nhân Linux, và do đó việc điều hướng giao diện người dùng sẽ quen thuộc với bất kỳ ai đã từng cấu hình một kernel.
+- 3 thay đổi cấu hình khuyên dùng:
+    + Trong phần Paths and misc options, vô hiệu hóa (disable) mục Render the toolchain read-only (CT_PREFIX_DIR_RO).
+    + Trong phần Target options | Floating point, chọn hardware (FPU) (CT_ARCH_FLOAT_HW).
+    + Trong phần Target options, nhập neon cho mục Use specific FPU.
+- Điều đầu tiên là cần thiết nếu muốn thêm các thư viện vào chuỗi công cụ sau khi nó đã được cài đặt.
+- Điều thứ hai chọn giao diện nhị phân eabihf vì những lý do đã thảo luận trước đó.
+- Điều thứ ba là cần thiết để xây dựng nhân Linux thành công.
+- Các tên trong ngoặc đơn là các nhãn cấu hình được lưu trong tệp cấu hình. Khi bạn đã thực hiện xong các thay đổi, hãy thoát khỏi menu menuconfig và lưu cấu hình lại.
+
+- Bây giờ bạn có thể sử dụng crosstool-NG để lấy về, cấu hình và xây dựng các thành phần theo đặc tả của bạn, bằng cách gõ lệnh sau:
+$ bin/ct-ng build
+- Quá trình xây dựng sẽ mất khoảng nửa giờ, sau đó bạn sẽ thấy chuỗi công cụ của mình hiện diện trong thư mục ~/x-tools/arm-cortex_a8-linux-gnueabihf.
+
